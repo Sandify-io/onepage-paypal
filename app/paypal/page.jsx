@@ -6,8 +6,8 @@ const PayPalCheckout = () => {
   const [orderId, setOrderId] = useState(null);
   const [error, setError] = useState("");
   const [accessToken, setAccessToken] = useState(null);
-  const clientId = "AYs-QzyPzP9sOtfock0KgO6debvstBRqc4J13PIoMEjgGMQgKRFwlUWpLUF2dOyi5KYfuMCMcnQTxBqF";
-  const clientSecret = "EPmuF0BmpRPFnyI-H6MlZw8hhutV1c9uOFwdZibaVNFwCZJQ7D7B_blUGqAwJr0ZLEAOzIGkXe-OkyuQ";
+  const clientId = "ASZaT72VoMoCjzE6TA8CmwDpyrDoUXGlPjXJZFGL70sbNpHvjJcAgAD96Wwa_3Iw4KAPFRVJtJ9cYwOs";
+  const clientSecret = "ELCMyxPO25guCmusQP6_2c6q4SfIN-b1i9h9QbEI5q540YUQiixVIhk03FXOHx5_Fy0Xpj8V-sb19rT4";
 
   useEffect(() => {
     getAccessToken();
