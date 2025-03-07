@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from "react";
+import { v4 as uuidv4 } from 'uuid';
 
 const OnepagePayPalCheckout = () => {
   const [orderId, setOrderId] = useState(null); // Lưu order_id sau khi tạo đơn hàng
@@ -33,7 +34,7 @@ const OnepagePayPalCheckout = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "PayPal-Request-Id": "2bb267eb-b261-40e3-a718-13adea34e24e",
+          "PayPal-Request-Id": uuidv4(),
           "Merchant-Client-Id": merchantClientId,
           "Partner-Client-Id": partnerClientId,
         },
@@ -101,6 +102,7 @@ const OnepagePayPalCheckout = () => {
           "Merchant-Client-Id": merchantClientId,
           "Partner-Client-Id": partnerClientId,
         },
+        body:  JSON.stringify({})
       });
 
       const orderData = await response.json();
