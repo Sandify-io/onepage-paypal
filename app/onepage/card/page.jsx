@@ -2,18 +2,27 @@
 
 import React, { useEffect, useState } from "react";
 
-const PayPalCheckout = () => {
+const OnepagePayPalCheckout = () => {
   const [orderId, setOrderId] = useState(null); // Lưu order_id sau khi tạo đơn hàng
+  const [isSubmitting, setSubmitting] = useState(false)
   const [error, setError] = useState(""); // Lưu order_id sau khi tạo đơn hàng
   const partnerClientId = "AYs-QzyPzP9sOtfock0KgO6debvstBRqc4J13PIoMEjgGMQgKRFwlUWpLUF2dOyi5KYfuMCMcnQTxBqF"
   const merchantClientId = "Z25Q4GHJXTWVN"
+    const [cardError, setCardError] = useState({
+    'Error: INVALID_CVV': false, 
+    'Error: INVALID_NUMBER': false, 
+    'Error: INVALID_EXPIRY': false
+  })
   useEffect(() => {
     // Load PayPal SDK
+    let components = ['buttons']
+    let paypalScrip = `https://www.paypal.com/sdk/js?client-id=${partnerClientId}&currency=USD&merchant-id=${merchantClientId}`
+    components.push('card-fields')
+    paypalScrip += `&components=${components.join(',')}`
     const script = document.createElement("script");
-    
-    script.src = `https://www.paypal.com/sdk/js?client-id=${partnerClientId}&currency=USD&merchant-id=${merchantClientId}`;
+    script.src = paypalScrip;
     script.async = true;
-    script.onload = () => renderPayPalButton();
+    script.onload = () => renderPayPalACDC();
     document.body.appendChild(script);
   }, []);
 
@@ -78,7 +87,7 @@ const PayPalCheckout = () => {
   };
 
   // Gọi API Capture Order để xác nhận thanh toán
-  const captureOrder = async (data) => {
+  const onApprove = async (data) => {
     if (!data.orderID) {
       console.error("❌ No Order ID found for capture.");
       return;
@@ -139,34 +148,130 @@ const PayPalCheckout = () => {
   };
 
   // Render nút PayPal
-  const renderPayPalButton = () => {
-    let style = {
-      color: 'gold',
-      height: 55,
-      // label: 'checkout',
-      // layout: 'horizontal', // just paypal button 
-      layout: 'vertical', // paypal button & paypal credit button
-      size: 'medium',
-      shape: 'rect',
-      tagline: false,
-      fundingicons: 'false'
-    }
-    if (window.paypal) {
-      window.paypal.Buttons({
-        style: style,
-        createOrder: async () => await createOrder(),
-        onApprove: async (data) => await captureOrder(data),
-      }).render("#paypal-button-container");
+  const renderPayPalACDC = () => {
+    const cardField = window.paypal.CardFields({
+      createOrder: createOrder,
+      onApprove: onApprove,
+      style: {
+        'input': {
+            'padding': '15px 20px',
+            'color': '#363636',
+            'font-size': '1rem'
+        },
+      },
+      inputEvents: {
+          onChange: (data) => {
+            console.log("onChange", data)
+              // Do something when an input changes
+          },
+          onFocus: (data) => {
+            console.log("onFocus", data)
+              // Do something when a field gets focus
+          },
+          onBlur: (data) => {
+            console.log("onBlur", data)
+              // Do something when a field loses focus
+          },
+          onInputSubmitRequest: (data) => {
+            console.log("onInputSubmitRequest", data)
+              if (data.isFormValid) {
+                  // Submit the card form for the payer
+              } else {
+                  // Inform payer that some fields are not valid
+              }
+          }
+      }
+    })
+
+    // Render each field after checking for eligibility
+    if (cardField.isEligible()) {
+      const nameField = cardField.NameField();
+      nameField.render("#card-name-field-container");
+
+      const numberField = cardField.NumberField();
+      numberField.render("#card-number-field-container");
+
+      const cvvField = cardField.CVVField();
+      cvvField.render("#card-cvv-field-container");
+
+      const expiryField = cardField.ExpiryField();
+      expiryField.render("#card-expiry-field-container");
+
+      // Add click listener to submit button and call the submit function on the CardField component
+      const multiCard = document.getElementById("multi-card-field-button")
+      if (typeof multiCard === 'undefined' || multiCard === null ) {
+        return
+      }
+      multiCard.addEventListener("click", () => {
+        setSubmitting(true)
+        setCardError({
+          'Error: INVALID_CVV': false, 
+          'Error: INVALID_NUMBER': false, 
+          'Error: INVALID_EXPIRY': false
+        })
+        cardField.submit().catch((error) => {
+          setCardError((cardError) => {
+            cardError[error] = true
+            return cardError
+          })
+          setSubmitting(false)
+          // resultMessage(
+          //   `Sorry, your transaction could not be processed...<br><br>${error}`,
+          // );
+        });
+      });
+    } else {
+      // Hides card fields if the merchant isn't eligible
+      document.querySelector("#card-form").style = "display: none";
     }
   };
 
   return (
-    <div>
-      <div id="paypal-button-container"></div>
-      {orderId && <p>🛒 Order ID: {orderId}</p>} {/* Hiển thị Order ID */}
-      {error && <p>🛒 Error ID: {error}</p>} {/* Hiển thị Order ID */}
+    <div className="p-4">
+      <p className="text-lg font-semibold">With Onepage API, PayPal ACDC</p>
+      <pre className="bg-gray-100 p-2 rounded-md text-sm mb-3">
+          Using Partner Client ID & Client Merchant ID
+      </pre>
+      <div className="card-form" id="card-form">
+        <div className="mb-2 font-medium">Card information</div>
+        <div className="hidden" id="card-name-field-container"></div>
+        <div>
+          <div className="control">
+            <div id="card-number-field-container"></div>
+            <p className="text-red-500 text-sm">{ cardError['Error: INVALID_NUMBER'] && 'Card number invalid'}</p>
+          </div>
+        </div>
+        <div className="flex space-x-2 mt-2">
+          <div className="flex-1">
+            <div className="control">
+              <div id="card-expiry-field-container"></div>
+              <p className="text-red-500 text-sm">{ cardError['Error: INVALID_EXPIRY'] && 'Card expiration date invalid'}</p>
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="control">
+              <div id="card-cvv-field-container"></div>
+              <p className="text-red-500 text-sm">{ cardError['Error: INVALID_CVV'] && 'Card CVV invalid'}</p>
+            </div>
+          </div>
+        </div>
+        <button
+          id="multi-card-field-button"
+          className={`mt-4 w-full py-2 px-4 rounded-md text-white font-bold ${isSubmitting ? 'bg-blue-500 opacity-75 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+          type="button"
+          disabled={isSubmitting} // Prevents invalid submissions
+        >
+          <div className="flex items-center justify-center">
+            {isSubmitting ?
+              <strong>Processing...</strong> :
+              <strong>Pay now</strong>
+            }
+          </div>
+        </button> 
+      </div>
     </div>
+
   );
 };
 
-export default PayPalCheckout;
+export default OnepagePayPalCheckout;
