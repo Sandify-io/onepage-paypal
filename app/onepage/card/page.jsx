@@ -205,18 +205,19 @@ const OnepagePayPalCheckout = () => {
         return
       }
       multiCard.addEventListener("click", () => {
-        setSubmitting(true)
+        setSubmitting(true);
         setCardError({
-          'Error: INVALID_CVV': false, 
-          'Error: INVALID_NUMBER': false, 
-          'Error: INVALID_EXPIRY': false
-        })
-        cardField.submit().catch((error) => {
-          setCardError((cardError) => {
-            cardError[error] = true
-            return cardError
-          })
-          setSubmitting(false)
+          "Error: INVALID_CVV": false,
+          "Error: INVALID_NUMBER": false,
+          "Error: INVALID_EXPIRY": false,
+        });
+
+        cardField.submit().catch((fieldError) => {
+          setCardError((prev) => ({
+            ...prev,
+            [fieldError]: true,
+          }));
+          setSubmitting(false);
           // resultMessage(
           //   `Sorry, your transaction could not be processed...<br><br>${error}`,
           // );
